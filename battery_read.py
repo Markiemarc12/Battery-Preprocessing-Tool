@@ -130,7 +130,7 @@ def check_cell(row: pd.Series,thresholds:dict)-> str:
             if status != "Fail":
                 status = "Warning"
             reasons.append("High resistance")
-    return status,reasons
+    return status, "; ".join(reasons)
 
 #function to check comments for flag words
 def check_comment(row:pd.Series, keywords:dict)->str:
@@ -154,7 +154,7 @@ def check_comment(row:pd.Series, keywords:dict)->str:
             reasons.append(f"Comment keyword: {keyword}")
             if status != "Fail":
                 status = "Warning"
-    return status, reasons
+    return status, "; ".join(reasons)
 
 def combine_status(row):
     '''function to check both function results and return a pass, fail, warning metric'''
@@ -183,8 +183,13 @@ def highlight_row(row):
     return [""]*len(row)
 
 def get_review_reasons(row):
-    if row["review_status"] == "Fail" or row["review_status"] == "Warning":
-        
+    #deal with missing syntax
+    reasons =[]
+    if row["cell_reasons"]:
+        reasons.append(row['cell_reasons'])
+    if row["comment_reasons"]:
+        reasons.append(row['comment_reasons'])
+    return "; ".join(reasons)
 
 
 #---------------UI Streamlit-----------------------
@@ -227,19 +232,22 @@ if missing:
     st.stop()
 
 #create a new colum and fill each row with results of check_cell output
-df["cell_status"] = df.apply(
+df[["cell_status","cell_reasons"]] = df.apply(
     lambda row: check_cell(row, DEFAULT_THRESHOLDS), #for a give row, check_cell,
-    axis=1 #work across rows
+    axis=1, #work across rows
+    result_type="expand"
 )
 
 #create a new column and fill each row with results of check_comment output
-df["comment_status"] = df.apply(
+df[["comment_status","comment_reasons"]] = df.apply(
     lambda row: check_comment(row, COMMENT_KEYWORDS),
-    axis=1
+    axis=1,
+    result_type="expand"
 )
 
 #create a review row
 df["review_status"] = df.apply(combine_status, axis=1)
+df["review_reasons"] = df.apply(get_review_reasons, axis=1)
 
 #apply function cell-by-cell
 styled_df = df.style.map(
