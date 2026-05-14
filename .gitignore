@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 ~$*
 *.zip
+battery_preprocessing_streamlit_app.py
