@@ -4,18 +4,15 @@ This package contains synthetic Excel data and a starter Streamlit app for prepr
 
 ## Files
 
-- `synthetic_substation_dc_battery_tests.xlsx` — fake but realistic demo workbook.
-- `battery_preprocessing_streamlit_app.py` — Streamlit dashboard and preprocessing script.
+- [raw_substation_battery_test_export.xlsx](raw_substation_battery_test_export.xlsx) — example raw substation battery test export.
+
 - `requirements.txt` — packages needed for the demo.
 
 ## Run
 
 ```bash
 pip install -r requirements.txt
-streamlit run battery_preprocessing_streamlit_app.py
-```
 
-Then upload the Excel workbook inside the Streamlit app.
 
 ## Demo workflow
 
@@ -24,13 +21,10 @@ Then upload the Excel workbook inside the Streamlit app.
 3. Validate required fields.
 4. Classify cell readings using demo thresholds.
 5. Combine string-level and cell-level results.
-6. Show KPIs, issue tables, and charts.
-7. Export a cleaned summary CSV.
+
 
 ## Production upgrade ideas
 
 - Replace demo thresholds with manufacturer-specific limits.
-- Add parser templates for messy field spreadsheets.
 - Add trend analysis by substation, battery string, and cell number.
 - Add anomaly detection for cells drifting from their historical baseline.
-- Store cleaned results in SQLite, SharePoint, or a maintenance database.
