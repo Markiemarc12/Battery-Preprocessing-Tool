@@ -12,6 +12,7 @@ This package contains synthetic Excel data and a starter Streamlit app for prepr
 
 ```bash
 pip install -r requirements.txt
+```
 
 
 ## Demo workflow
