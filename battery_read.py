@@ -208,7 +208,6 @@ styled_df = df.style.map(
     subset=["cell_status", "review_status"]
 )
 
-st.dataframe(styled_df)
 
 #--------------Summary-----------------------
 st.subheader("Battery Test Summary")
@@ -248,3 +247,7 @@ r1.metric("Avg Resistance", f"{avg_resistance:.3f} mΩ")
 r2.metric("Max Resistance", f"{max_resistance:.3f} mΩ") 
 r3.metric("Avg Specific Gravity", f"{avg_sg:.3f}") 
 r4.metric("Min Specific Gravity", f"{min_sg:.3f}") 
+
+#-----------------Full excel table styled---------------
+st.subheader("Full Excel File")
+st.dataframe(styled_df)
