@@ -85,6 +85,8 @@ def clean_cols(df: pd.DataFrame) -> pd.DataFrame:
 
 #function to check numeric values against DEFAULT_THRESHOLDS
 def check_cell(row: pd.Series,thresholds:dict)-> str:
+    reasons = []
+    status = "Pass"
     #define rows
     voltage = row.get("cell_voltage_v")
     resistance= row.get("internal_resistance_mohm")
@@ -93,26 +95,48 @@ def check_cell(row: pd.Series,thresholds:dict)-> str:
     #define lead-acid dictionary
     lead_acid = thresholds["lead_acid"]
     #fail conditions, compare values to threshold dictionary
-    fail = (
-        (pd.notna(voltage) and voltage < lead_acid["cell_voltage"]['low_critical'])
-        or (pd.notna(sg) and sg < lead_acid["specific_gravity"]["low_critical"])
-    or (pd.notna(resistance) and resistance > lead_acid["internal_resistance"]["high_critical"])
-    )
-    #warning conditions, compare values to threshold dictionary
-    warning = (
-        (pd.notna(voltage) and voltage < lead_acid["cell_voltage"]['low_warning'])
-        or (pd.notna(sg) and sg < lead_acid["specific_gravity"]["low_warning"])
-    or (pd.notna(resistance) and resistance > lead_acid["internal_resistance"]["high_warning"])
-    )
-    if fail:
-        return "Fail"
-    if warning:
-        return "Warning"
-    return "Pass"
+    if pd.notna(voltage):
+        if voltage < lead_acid["cell_voltage"]['low_critical']:
+            if status != "Fail":
+                status = "Fail"
+            reasons.append("Critically low voltage")
+        elif voltage > lead_acid["cell_voltage"]['high_critical']:
+            if status != "Fail":
+                status = "Fail"
+            reasons.append("Critically high voltage")
+        elif voltage < lead_acid["cell_voltage"]['low_warning']:
+            if status != "Fail":
+                  status = "Warning"
+            reasons.append("Low voltage")
+        elif voltage > lead_acid["cell_voltage"]['high_warning']:
+            if status != "Fail":
+                status = "Warning"
+            reasons.append("High  voltage")
+    if pd.notna(sg):
+        if sg < lead_acid["specific_gravity"]["low_critical"]:
+            if status != "Fail":
+                status = "Fail"
+            reasons.append("Critically low specific gravity")
+        elif sg < lead_acid["specific_gravity"]["low_warning"]:
+            if status != "Fail":
+                status = "Warning"
+            reasons.append("low specific gravity")
+    if pd.notna(resistance):
+        if resistance > lead_acid["internal_resistance"]["high_critical"]:
+          if status != "Fail":
+            status = "Fail"
+            reasons.append("Critically high resistance")
+        elif resistance > lead_acid["internal_resistance"]["high_warning"]:
+            if status != "Fail":
+                status = "Warning"
+            reasons.append("High resistance")
+    return status,reasons
 
 #function to check comments for flag words
 def check_comment(row:pd.Series, keywords:dict)->str:
     '''Check comment cell in row and evaluates'''
+    reasons =[]
+    status = "Pass"
     #import comment and convert to lowercase
     comment = row.get("technician_comments","").lower()
 
@@ -123,11 +147,14 @@ def check_comment(row:pd.Series, keywords:dict)->str:
     #check comments for Failure and warnings, return pass if pass
     for keyword in critical:
         if keyword in comment:
-            return "Fail"
+            reasons.append(f"Comment keyword: {keyword}")
+            status = "Fail"
     for keyword in warning:
         if keyword in comment:
-            return "Warning"
-    return "Pass"
+            reasons.append(f"Comment keyword: {keyword}")
+            if status != "Fail":
+                status = "Warning"
+    return status, reasons
 
 def combine_status(row):
     '''function to check both function results and return a pass, fail, warning metric'''
@@ -154,7 +181,10 @@ def highlight_row(row):
     elif row["review_status"] == "Pass":
         return ["background-color: green"]*len(row)
     return [""]*len(row)
-    
+
+def get_review_reasons(row):
+    if row["review_status"] == "Fail" or row["review_status"] == "Warning":
+        
 
 
 #---------------UI Streamlit-----------------------
@@ -257,15 +287,30 @@ st.markdown("""
 🟥 Fail  
 🟨 Warning
 """)
+#loop through banks in battery bank column
 for bank in df["battery_bank"].unique():
+    #create a new dataframe for each bank #
     bank_df = df[df["battery_bank"]== bank]
-
+    #create another new dataframe filled with banks that failed test
     review_df = bank_df[
         bank_df["review_status"].isin(["Warning", "Fail"])
     ]
+
+    #create dataframe of failures
+    fail_df = bank_df[bank_df["review_status"]=="Fail"].sort_values("cell_number")
+    #create dataframe of warnings
+    warning_df = bank_df[bank_df["review_status"]=="Warning"].sort_values("cell_number")
+    #create a styled dataframe 
     styled_review_df=review_df.style.apply(highlight_row, axis=1)
     st.subheader(bank)
     st.dataframe(styled_review_df, use_container_width=True)
+
+    st.markdown("#### Failures")
+    st.dataframe(fail_df[["cell_number", "review_reasons"]])
+
+    st.markdown("#### Warnings")
+    st.dataframe(warning_df[["cell_number", "review_reasons"]])
+
 
 #-----------------Full excel table styled---------------
 st.subheader("Full Excel File")
