@@ -139,13 +139,22 @@ def combine_status(row):
 
 def status_color(value):
     if value =="Fail":
-        return "color: red"
+        return "background-color: red"
     elif value == "Warning":
-        return "color: orange"
+        return "background-color: orange"
     elif value == "Pass":
-        return "color: green"
+        return "background-color: green"
     return ""
 
+def highlight_row(row):
+    if row["review_status"] == "Fail":
+        return ["background-color: #ffcccc"]*len(row)
+    elif row["review_status"] == "Warning":
+        return ["background-color: #fff3cd"]*len(row)
+    elif row["review_status"] == "Pass":
+        return ["background-color: green"]*len(row)
+    return [""]*len(row)
+    
 
 
 #---------------UI Streamlit-----------------------
@@ -210,7 +219,7 @@ styled_df = df.style.map(
 
 
 #--------------Summary-----------------------
-st.subheader("Battery Test Summary")
+st.header("Battery Test Summary")
 
 total_records = len(df)
 
@@ -218,35 +227,45 @@ fail_count = (df["review_status"]== "Fail").sum()
 warning_count = (df["review_status"]== "Warning").sum()
 pass_count = (df["review_status"]=="Pass").sum()
 
-avg_voltage =df["cell_voltage_v"].mean()
-min_voltage = df["cell_voltage_v"].min()
-max_voltage = df["cell_voltage_v"].max()
-voltage_spread = max_voltage - min_voltage
-
-avg_resistance = df["internal_resistance_mohm"].mean()
-max_resistance = df["internal_resistance_mohm"].max()
-
-avg_sg = df["specific_gravity"].mean()
-min_sg = df["specific_gravity"].min()
-
-#---------display--------
+#---------display summary--------
 c1, c2, c3, c4 = st.columns(4) #create 4 columns
 c1.metric("Records Reviewed", total_records)
 c2.metric("Pass", pass_count)
 c3.metric("Warning", warning_count)
 c4.metric("Failure", fail_count)
 
-v1, v2, v3, v4 = st.columns(4) #create 4 more
-v1.metric("Avg Cell Voltage", f"{avg_voltage:.3f} V") 
-v2.metric("Min Cell Voltage", f"{min_voltage:.3f} V") 
-v3.metric("Max Cell Voltage", f"{max_voltage:.3f} V") 
-v4.metric("Voltage Spread", f"{voltage_spread:.3f} V") 
+#---------------battery bank summary------------------
+st.subheader("Battery Bank Summary")
+#create a new data frame
+bank_summary = df.groupby("battery_bank").agg(
+    cells_tested=("cell_number", "count"),
+    avg_voltage=("cell_voltage_v", "mean"),
+    min_voltage=("cell_voltage_v", "min"),
+    max_voltage=("cell_voltage_v", "max"),
+    avg_resistance=("internal_resistance_mohm", "mean"),
+    max_resistance=("internal_resistance_mohm", "max"),
+    avg_sg=("specific_gravity", "mean"),
+    min_sg=("specific_gravity", "min"),
+)
+st.dataframe(bank_summary)
 
-r1, r2, r3, r4 = st.columns(4) 
-r1.metric("Avg Resistance", f"{avg_resistance:.3f} mΩ") 
-r2.metric("Max Resistance", f"{max_resistance:.3f} mΩ") 
-r3.metric("Avg Specific Gravity", f"{avg_sg:.3f}") 
-r4.metric("Min Specific Gravity", f"{min_sg:.3f}") 
+#-------------bank view--------------------------------
+st.header("Battery Bank Issues")
+st.markdown("""
+### Review Key
+
+🟥 Fail  
+🟨 Warning
+""")
+for bank in df["battery_bank"].unique():
+    bank_df = df[df["battery_bank"]== bank]
+
+    review_df = bank_df[
+        bank_df["review_status"].isin(["Warning", "Fail"])
+    ]
+    styled_review_df=review_df.style.apply(highlight_row, axis=1)
+    st.subheader(bank)
+    st.dataframe(styled_review_df, use_container_width=True)
 
 #-----------------Full excel table styled---------------
 st.subheader("Full Excel File")
