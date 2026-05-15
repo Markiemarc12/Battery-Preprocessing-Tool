@@ -14,7 +14,16 @@ This package contains synthetic Excel data and a starter Streamlit app for prepr
 pip install -r requirements.txt
 ```
 ## System Architecture
-![Diagram of workflow](images/diagram.png)
+```mermaid
+flowchart LR
+    A[Raw Excel Export] --> B[Pandas Loader]
+    B --> C[Column Normalization]
+    C --> D[Validation Engine]
+    D --> E[Pass / Warning / Fail Classification]
+    E --> F[Streamlit Dashboard]
+    E --> G[Excel Export]
+    E --> H[Optional AI Summary]
+```
 
 ## Demo workflow
 
