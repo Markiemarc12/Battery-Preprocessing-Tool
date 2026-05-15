@@ -1,6 +1,6 @@
 # Battery Test Preprocessing Demo
 
-This package contains synthetic Excel data and a starter Streamlit app for preprocessing substation backup DC battery test results.
+A Streamlit-based engineering workflow tool for preprocessing, validating, and reviewing substation backup DC battery test data.
 
 ## Engineering Concepts Demonstrated
 
@@ -15,6 +15,15 @@ This package contains synthetic Excel data and a starter Streamlit app for prepr
 ## Deterministic Validation Philosophy
 
 - All pass/fail classifications are generated using deterministic engineering rules and configurable thresholds.
+
+## Tech Stack
+
+- Python
+- pandas
+- Streamlit
+- openpyxl
+- regex (re)
+- Gemini API (optional AI summary layer)
 
 ## System Architecture
 ```mermaid
