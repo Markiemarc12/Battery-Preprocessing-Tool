@@ -156,11 +156,22 @@ def check_comment(row:pd.Series, keywords:dict)->str:
                 status = "Warning"
     return status, "; ".join(reasons)
 
+#function get deviation for row
+def row_voltage_deviation(row:pd.Series,avg):
+    return abs(row["cell_voltage_v"]-avg)
+#determine if imbalance
+def imbalance_status(row:pd.Series):
+    if row["voltage_deviation"] > 0.05:
+        return "Fail"
+    elif row["voltage_deviation"]> 0.03:
+        return "Warning"
+    
+
 def combine_status(row):
     '''function to check both function results and return a pass, fail, warning metric'''
-    if "Fail" in [row["cell_status"], row["comment_status"]]:
+    if "Fail" in [row["cell_status"], row["comment_status"], row["imbalance_status"]]:
         return "Fail"
-    if "Warning" in [row["cell_status"], row["comment_status"]]:
+    if "Warning" in [row["cell_status"], row["comment_status"],row["imbalance_status"]]:
         return "Warning"
     return "Pass"
 
@@ -189,7 +200,12 @@ def get_review_reasons(row):
         reasons.append(row['cell_reasons'])
     if row["comment_reasons"]:
         reasons.append(row['comment_reasons'])
+    if row["imbalance_status"]=="Fail":
+        reasons.append(f"Voltage imbalance: {row['voltage_deviation']:.3f} V from bank average")
+    elif row["imbalance_status"]=="Warning":
+         reasons.append(f"Voltage imbalance warning: {row['voltage_deviation']:.3f} V from bank average")
     return "; ".join(reasons)
+
 
 
 #---------------UI Streamlit-----------------------
@@ -244,6 +260,29 @@ df[["comment_status","comment_reasons"]] = df.apply(
     axis=1,
     result_type="expand"
 )
+#create new voltage deviation ifo rows
+df["voltage_deviation"] = 0.0
+df["imbalance_status"] = "Pass"
+
+#loop through each unique battery bank name calculate
+for bank in df["battery_bank"].unique():
+    #find rows associated with this bank
+    bank_mask = df["battery_bank"] == bank
+    #make temporary copy
+    bank_df = df[bank_mask].copy()
+    #calculate the avg cell votage for bank
+    bank_avg = bank_df["cell_voltage_v"].mean()
+    #calculate the voltage deviation for the bank
+    bank_df["voltage_deviation"] = bank_df.apply(
+        lambda row: row_voltage_deviation(row, bank_avg),
+        axis=1
+    )
+    #write the deviation values back into the main df
+    df.loc[bank_mask, "voltage_deviation"] = bank_df["voltage_deviation"]
+
+df["imbalance_status"] = df.apply(imbalance_status,axis=1)
+
+df["review_status"] = df.apply(combine_status, axis=1)
 
 #create a review row
 df["review_status"] = df.apply(combine_status, axis=1)
@@ -254,6 +293,7 @@ styled_df = df.style.map(
     status_color,
     subset=["cell_status", "review_status"]
 )
+
 
 
 #--------------Summary-----------------------
@@ -299,17 +339,19 @@ st.markdown("""
 for bank in df["battery_bank"].unique():
     #create a new dataframe for each bank #
     bank_df = df[df["battery_bank"]== bank]
+
     #create another new dataframe filled with banks that failed test
     review_df = bank_df[
         bank_df["review_status"].isin(["Warning", "Fail"])
     ]
-
+        
     #create dataframe of failures
     fail_df = bank_df[bank_df["review_status"]=="Fail"].sort_values("cell_number")
     #create dataframe of warnings
     warning_df = bank_df[bank_df["review_status"]=="Warning"].sort_values("cell_number")
     #create a styled dataframe 
     styled_review_df=review_df.style.apply(highlight_row, axis=1)
+
     st.subheader(bank)
     st.dataframe(styled_review_df, use_container_width=True)
 
