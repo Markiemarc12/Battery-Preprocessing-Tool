@@ -60,11 +60,16 @@ pip install -r requirements.txt
 ### Optional AI Summary
 ![Optional AI Summary](images/Stage4.png)
 
-- Gemni API is used here as a free demonstration of how Generative AI could be used to summerize results for engineer readibility. 
-- AI does not make any decisions regarding maintenance or battery health status, it simply summerizes prior findings
-- The prompt used here is: 
-"""
-You are assisting an electrical utility asset maintenance engineer reviewing backup substation DC battery test preprocessing results.
+## AI Review Prompt
+
+The optional AI maintenance summary layer uses a constrained
+engineering-focused prompt. The AI does **not** make maintenance
+decisions or override deterministic classifications.
+
+```python
+prompt = f"""
+You are assisting an electrical utility asset maintenance engineer
+reviewing backup substation DC battery test preprocessing results.
 
 Rules:
 - Do not make final maintenance decisions.
@@ -78,6 +83,7 @@ Flagged battery test records:
 
 Write a concise engineer-facing review summary.
 """
+```
 
 
 
