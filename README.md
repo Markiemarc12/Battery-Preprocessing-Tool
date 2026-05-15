@@ -13,7 +13,8 @@ This package contains synthetic Excel data and a starter Streamlit app for prepr
 ```bash
 pip install -r requirements.txt
 ```
-
+## System Architecture
+![Diagram of workflow](images/diagram.png)
 
 ## Demo workflow
 
