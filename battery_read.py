@@ -1,7 +1,18 @@
 import pandas as pd
 import re # regular expression
 import streamlit as st
+#-----------GEMINI API--------------
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+
+api_key = os.getenv("GEMINI_API_KEY")
+
+from google import genai
+
+client = genai.Client(api_key=api_key)
+#-----------------------------------
 #streamlit calls for UI
 st.set_page_config(page_title="Battery Test Preprocessing Demo", layout="wide")
 
@@ -165,6 +176,7 @@ def imbalance_status(row:pd.Series):
         return "Fail"
     elif row["voltage_deviation"]> 0.03:
         return "Warning"
+    return "Pass"
     
 
 def combine_status(row):
@@ -190,7 +202,7 @@ def highlight_row(row):
     elif row["review_status"] == "Warning":
         return ["background-color: #fff3cd"]*len(row)
     elif row["review_status"] == "Pass":
-        return ["background-color: green"]*len(row)
+        return ["background-color: #d4edda"]*len(row)
     return [""]*len(row)
 
 def get_review_reasons(row):
@@ -289,11 +301,10 @@ df["review_status"] = df.apply(combine_status, axis=1)
 df["review_reasons"] = df.apply(get_review_reasons, axis=1)
 
 #apply function cell-by-cell
-styled_df = df.style.map(
-    status_color,
-    subset=["cell_status", "review_status"]
+styled_df = df.style.apply(
+    highlight_row,
+    axis=1
 )
-
 
 
 #--------------Summary-----------------------
@@ -365,3 +376,45 @@ for bank in df["battery_bank"].unique():
 #-----------------Full excel table styled---------------
 st.subheader("Full Excel File")
 st.dataframe(styled_df)
+
+#--------------AI Summary-----------------------------
+
+st.subheader("AI Maintenance Review Summary")
+
+if not api_key:
+    st.warning("Gemini API key not found. Add GEMINI_API_KEY to your .env file.")
+
+elif st.button("Generate AI Summary"):
+    client = genai.Client(api_key=api_key)
+
+    ai_input = df[
+        df["review_status"].isin(["Warning", "Fail"])
+    ][[
+        "battery_bank",
+        "cell_number",
+        "review_status",
+        "review_reasons"
+    ]].to_string(index=False)
+
+    prompt = f"""
+You are assisting an electrical utility asset maintenance engineer reviewing backup substation DC battery test preprocessing results.
+
+Rules:
+- Do not make final maintenance decisions.
+- Do not override the deterministic pass/warning/fail classifications.
+- Summarize only the flagged records.
+- Use cautious engineering language.
+- Organize the summary by battery bank.
+
+Flagged battery test records:
+{ai_input}
+
+Write a concise engineer-facing review summary.
+"""
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
+
+    st.write(response.text)

@@ -6,3 +6,4 @@ __pycache__/
 *.zip
 battery_preprocessing_streamlit_app.py
 ~$*
+GEMINI_API_KEY
