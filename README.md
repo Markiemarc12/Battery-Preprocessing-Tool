@@ -67,6 +67,7 @@ pip install -r requirements.txt
 ### Full Excel Form
 ![Annotated Excel Form](images/Stage3.png)
 ### Optional AI Summary
+![Optional AI Summary](images/optional_summary.png)
 ![Optional AI Summary](images/Stage4.png)
 
 ## AI Review Prompt
