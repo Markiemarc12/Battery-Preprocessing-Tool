@@ -24,6 +24,17 @@ pip install -r requirements.txt
 4. Classify cell readings using demo thresholds.
 5. Combine string-level and cell-level results.
 
+## App
+
+![Landing page](images/Stage0.png)
+
+![Summary](images/Stage1.png)
+
+![Battery Bank Issues](images/Stage2.png)
+
+![Annotated Excel Form](images/Stage3.png)
+
+![Optional AI Summary](images/Stage4.png)
 
 ## Production upgrade ideas
 
